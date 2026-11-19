@@ -332,6 +332,11 @@ class Handler(BaseHTTPRequestHandler):
                     url="http://127.0.0.1:11434/api/chat";payload={"model":model["name"],"messages":msgs,"stream":True,"keep_alive":-1}
                 else:
                     url=f"http://127.0.0.1:{MODEL_PORT}/v1/chat/completions";payload={"messages":msgs,"stream":True,"max_tokens":4096,"temperature":.6,"chat_template_kwargs":{"enable_thinking":True},"reasoning_format":"deepseek","thinking_budget_tokens":768}
+                speed=caps.settings().get('performance','balanced')
+                if model['engine']!='Ollama':
+                    payload['chat_template_kwargs']['enable_thinking']=speed!='fast'
+                    payload['max_tokens']=2048 if speed=='fast' else 4096
+                    payload['thinking_budget_tokens']=1536 if speed=='deep' else 768
                 if tools:payload["tools"]=tools
                 browser_task=bool(re.search(r'(открой|открыть|включи|включить|найди|найти|перейди|перейти|покажи|зайди|open|search|play)',text,re.I) and re.search(r'(браузер|сайт|ютуб|youtube|safari|сафари|https?://)',text,re.I))
                 if re.search(r'не (?:надо |нужно |следует )?(?:откры|включ|заход|переход)',text,re.I):browser_task=False

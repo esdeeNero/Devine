@@ -37,8 +37,25 @@ def save_settings(d):
             project=Path(d['project']).expanduser().resolve() if d['project'] else None
             if project and not project.is_dir():raise ValueError('Рабочая папка не найдена')
             s['project']=str(project) if project else ''
+        if 'performance' in d:
+            if d['performance'] not in ['fast','balanced','deep']:raise ValueError('Неизвестный режим модели')
+            s['performance']=d['performance']
+        if 'custom_theme' in d:
+            import re
+            palette=d['custom_theme']
+            keys=['bg','side','ink','accent']
+            if not isinstance(palette,dict) or any(not re.fullmatch(r'#[0-9a-fA-F]{6}',str(palette.get(k,''))) for k in keys):raise ValueError('Укажите четыре цвета в формате #RRGGBB')
+            def lum(h):
+                rgb=[int(h[i:i+2],16)/255 for i in [1,3,5]]
+                rgb=[v/12.92 if v<=.04045 else ((v+.055)/1.055)**2.4 for v in rgb]
+                return sum(a*b for a,b in zip(rgb,[.2126,.7152,.0722]))
+            for key in ['bg','side']:
+                a,b=sorted([lum(palette[key]),lum(palette['ink'])])
+                if (b+.05)/(a+.05)<4.5:raise ValueError('Текст должен быть контрастнее фона (минимум 4.5:1)')
+            s['custom_theme']={k:palette[k].lower() for k in keys}
         if 'theme' in d:
-            if d['theme'] not in ['system','light','dark','sand']:raise ValueError('Неизвестная тема')
+
+            if d['theme'] not in ['system','light','dark','sand','custom']:raise ValueError('Неизвестная тема')
             s['theme']=d['theme']
         if 'access' in d:
             if d['access'] not in ['attachments','folders','full']:raise ValueError('Неизвестный режим доступа')
